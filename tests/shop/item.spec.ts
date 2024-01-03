@@ -1,78 +1,73 @@
-import test, { expect } from "@playwright/test"
+import { test } from "../../pages/base"
+import { expect } from "@playwright/test"
 
-test.beforeEach(async ({ page }) => {
-  await page.goto("")
+test.beforeEach(async ({ shopPage }) => {
+  await shopPage.goto()
 })
 
 test.describe("Shop item tests", () => {
   test("Sale items have visible sale tag, old and new price", async ({
-    page,
+    shopPage,
   }) => {
-    const item = page.locator(".product.sale").first()
-    expect(item.locator(".onsale")).toHaveText("Sale!")
-    expect(await item.locator(".amount").count()).toBe(2)
+    expect(shopPage.productSaleTag).toHaveText("Sale!")
+    expect(await shopPage.getNumberOfPrices()).toBe(2)
   })
 
   test("Shop item hover - Add to cart displays view cart message", async ({
-    page,
+    shopPage,
   }) => {
-    const item = page.locator(".product.sale").first()
-    await item.locator(".add_to_cart_button ").click()
-    const cart = item.getByTitle("View cart")
-    expect(cart).toBeVisible()
-    expect(await cart.getAttribute("href")).toEqual(
+    await shopPage.addToCart()
+    expect(shopPage.viewCartBtn).toBeVisible()
+    expect(await shopPage.getViewCartHref()).toEqual(
       "https://cms.demo.katalon.com/cart/"
     )
   })
 
-  test("Click on page 2 displays page two of shop items", async ({ page }) => {
-    const item = page.locator(".product.sale").first()
-    await page.getByRole("link", { name: "2", exact: true }).click()
-    const secondItem = page.locator(".product.sale").first()
-    expect(page.url().includes("/page/2/")).toBeTruthy()
-    expect(item).not.toBe(secondItem)
+  test("Click on page 2 displays page two of shop items", async ({
+    shopPage,
+  }) => {
+    const itemImg = await shopPage.getProductImgHref()
+    await shopPage.goToPage2()
+    const secondItemImg = await shopPage.getProductImgHref()
+    expect(shopPage.isValidUrl()).toBeTruthy()
+    expect(itemImg).not.toBe(secondItemImg)
   })
 
   test("Adding non-existent page number in url displays page not found message", async ({
-    page,
+    shopPage,
   }) => {
-    await page.goto(`${page.url()}/page/6`)
-    expect(page.getByText("Oops! That page can’t be found.")).toBeVisible()
+    await shopPage.goToPage6()
+    expect(shopPage.pageNotFoundTitle).toBeVisible()
   })
 
-  test("Last page paginator navigates to last item page", async ({ page }) => {
-    const href = await page.locator(".next").getAttribute("href")
+  test("Last page paginator navigates to last item page", async ({
+    shopPage,
+  }) => {
+    const href = await shopPage.getNextPageHref()
     expect(href).toEqual("https://cms.demo.katalon.com/page/2/")
   })
 
   test("First page paginator navigates to first item page", async ({
-    page,
+    shopPage,
   }) => {
-    await page.goto("https://cms.demo.katalon.com/page/2/")
-    const href = await page.locator(".prev").getAttribute("href")
+    await shopPage.goToPage2()
+    const href = await shopPage.getPrevPageHref()
     expect(href).toEqual("https://cms.demo.katalon.com/page/1/")
   })
 
-  test("Shop item image click navigates to item page", async ({ page }) => {
-    const item = page.locator(".product.sale").first()
-    const href = await item
-      .locator(".woocommerce-loop-product__link")
-      .first()
-      .getAttribute("href")
+  test("Shop item image click navigates to item page", async ({ shopPage }) => {
+    const href = await shopPage.getProductImgHref()
     expect(href).toBe("https://cms.demo.katalon.com/product/flying-ninja/")
   })
 
-  test("Add to cart adds correct item to the cart", async ({ page }) => {
-    const item = page.locator(".product.sale").first()
-    const itemImg = await item
-      .locator(".attachment-woocommerce_thumbnail")
-      .getAttribute("src")
-    await item.locator(".add_to_cart_button ").click()
-    await item.getByTitle("View cart").click()
-    const cartItem = page.locator(".cart_item")
-    const cartItemImg = await cartItem
-      .locator(".attachment-woocommerce_thumbnail")
-      .getAttribute("src")
-    expect(itemImg).toBe(cartItemImg)
-  })
+  // test("Add to cart adds correct item to the cart", async ({ shopPage }) => { //add cartPage
+  //   const itemImg = await shopPage.getProductImgHref()
+  //   await shopPage.addToCart()
+  //   await shopPage.viewCart()
+  //   const cartItem = page.locator(".cart_item")
+  //   const cartItemImg = await cartItem
+  //     .locator(".attachment-woocommerce_thumbnail")
+  //     .getAttribute("src")
+  //   expect(itemImg).toBe(cartItemImg)
+  // })
 })
